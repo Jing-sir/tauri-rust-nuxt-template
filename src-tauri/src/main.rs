@@ -15,10 +15,13 @@ use tokio::{
     time::{sleep, timeout, Duration, Instant},
 };
 use tokio_tungstenite::{connect_async, tungstenite::Message};
+use tracing::{debug, error, info, warn};
+use tracing_subscriber::EnvFilter;
 
 const DEFAULT_RECONNECT_BASE_DELAY_MS: u64 = 800;
 const DEFAULT_RECONNECT_MAX_DELAY_MS: u64 = 20_000;
 const DEFAULT_SECURE_SERVICE: &str = "com.xiangnan.tradingdesktop.credentials";
+const RUNTIME_SOURCE: &str = "rust-runtime";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -82,12 +85,12 @@ fn extract_sequence(payload: &Value) -> Option<u64> {
 fn emit_connection_state(app: &AppHandle, state: &str) {
     let payload = RuntimeConnectionStatePayload {
         state: state.to_string(),
-        source: "rust-runtime".to_string(),
+        source: RUNTIME_SOURCE.to_string(),
         timestamp: now_unix_millis(),
     };
 
     if let Err(error) = app.emit("runtime.connection.state", payload) {
-        eprintln!("failed to emit runtime.connection.state: {error}");
+        error!(%error, "failed to emit runtime.connection.state");
     }
 }
 
@@ -98,11 +101,11 @@ fn emit_runtime_event(app: &AppHandle, channel: &str, payload: Value) {
         timestamp: now_unix_millis(),
         sequence: extract_sequence(&payload),
         payload,
-        source: "rust-runtime".to_string(),
+        source: RUNTIME_SOURCE.to_string(),
     };
 
     if let Err(error) = app.emit("runtime.event", event_payload) {
-        eprintln!("failed to emit runtime.event: {error}");
+        error!(%error, "failed to emit runtime.event");
     }
 }
 
@@ -163,6 +166,7 @@ async fn run_subscription_worker(
     topic: String,
     mut stop_rx: oneshot::Receiver<()>,
 ) {
+    info!(%channel, %topic, "runtime worker started");
     let mut reconnect_attempt: u32 = 0;
 
     loop {
@@ -172,10 +176,12 @@ async fn run_subscription_worker(
         match connect_async(&stream_url).await {
             Ok((mut ws_stream, _)) => {
                 reconnect_attempt = 0;
+                info!(%channel, %topic, "binance websocket connected");
                 emit_connection_state(&app, "ready");
 
                 loop {
                     if should_stop(&mut stop_rx) {
+                        info!(%channel, %topic, "runtime worker stopped by signal");
                         emit_connection_state(&app, "offline");
                         return;
                     }
@@ -194,14 +200,16 @@ async fn run_subscription_worker(
                             }
                         }
                         Ok(Some(Ok(Message::Close(_)))) => {
+                            warn!(%channel, %topic, "binance websocket closed by server");
                             break;
                         }
                         Ok(Some(Ok(_))) => {}
                         Ok(Some(Err(error))) => {
-                            eprintln!("ws message error ({channel}/{topic}): {error}");
+                            warn!(%channel, %topic, %error, "binance websocket message error");
                             break;
                         }
                         Ok(None) => {
+                            warn!(%channel, %topic, "binance websocket stream ended");
                             break;
                         }
                         Err(_) => {}
@@ -209,7 +217,7 @@ async fn run_subscription_worker(
                 }
             }
             Err(error) => {
-                eprintln!("ws connect error ({channel}/{topic}): {error}");
+                warn!(%channel, %topic, %error, "failed to connect binance websocket");
             }
         }
 
@@ -223,6 +231,7 @@ async fn run_subscription_worker(
         let wait_until = Instant::now() + Duration::from_millis(delay);
         loop {
             if should_stop(&mut stop_rx) {
+                info!(%channel, %topic, "runtime worker stopped during reconnect");
                 emit_connection_state(&app, "offline");
                 return;
             }
@@ -251,6 +260,20 @@ fn resolve_secure_service(service: Option<String>) -> String {
         .unwrap_or_else(|| DEFAULT_SECURE_SERVICE.to_string())
 }
 
+fn init_tracing() {
+    let env_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("trading_desktop=info"));
+
+    if tracing_subscriber::fmt()
+        .with_target(false)
+        .with_env_filter(env_filter)
+        .try_init()
+        .is_ok()
+    {
+        debug!("tracing initialized");
+    }
+}
+
 #[tauri::command]
 fn ping_rust(name: Option<String>) -> String {
     let identity = name.unwrap_or_else(|| "trader".to_string());
@@ -269,6 +292,12 @@ async fn runtime_subscribe(
     state: State<'_, RuntimeState>,
     subscription: RuntimeSubscription,
 ) -> Result<(), String> {
+    info!(
+        channel = %subscription.channel,
+        topic = ?subscription.topic,
+        "runtime_subscribe invoked"
+    );
+
     let topic = resolve_topic(&subscription).ok_or_else(|| {
         format!(
             "failed to resolve topic for channel '{}' (try passing subscription.topic)",
@@ -281,6 +310,7 @@ async fn runtime_subscribe(
     let mut workers = state.workers.lock().await;
 
     if let Some(existing_worker) = workers.remove(&key) {
+        info!(key = %key, "existing runtime worker replaced");
         let _ = existing_worker.stop_tx.send(());
     }
 
@@ -305,7 +335,10 @@ async fn runtime_unsubscribe(
     let mut workers = state.workers.lock().await;
 
     if let Some(existing_worker) = workers.remove(&key) {
+        info!(key = %key, "runtime worker unsubscribed");
         let _ = existing_worker.stop_tx.send(());
+    } else {
+        debug!(key = %key, "runtime_unsubscribe ignored because worker did not exist");
     }
 
     Ok(())
@@ -314,6 +347,7 @@ async fn runtime_unsubscribe(
 #[tauri::command]
 async fn runtime_disconnect_all(state: State<'_, RuntimeState>) -> Result<(), String> {
     let mut workers = state.workers.lock().await;
+    info!(workers = workers.len(), "runtime_disconnect_all invoked");
 
     for (_, worker) in workers.drain() {
         let _ = worker.stop_tx.send(());
@@ -329,13 +363,20 @@ fn save_secure_credential(
     secret: String,
 ) -> Result<(), String> {
     let service_name = resolve_secure_service(service);
+    info!(service = %service_name, account = %account, "save secure credential");
     let entry = Entry::new(&service_name, &account).map_err(|error| error.to_string())?;
-    entry.set_password(&secret).map_err(|error| error.to_string())
+    entry
+        .set_password(&secret)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
-fn load_secure_credential(service: Option<String>, account: String) -> Result<Option<String>, String> {
+fn load_secure_credential(
+    service: Option<String>,
+    account: String,
+) -> Result<Option<String>, String> {
     let service_name = resolve_secure_service(service);
+    info!(service = %service_name, account = %account, "load secure credential");
     let entry = Entry::new(&service_name, &account).map_err(|error| error.to_string())?;
 
     match entry.get_password() {
@@ -348,6 +389,7 @@ fn load_secure_credential(service: Option<String>, account: String) -> Result<Op
 #[tauri::command]
 fn delete_secure_credential(service: Option<String>, account: String) -> Result<(), String> {
     let service_name = resolve_secure_service(service);
+    info!(service = %service_name, account = %account, "delete secure credential");
     let entry = Entry::new(&service_name, &account).map_err(|error| error.to_string())?;
 
     match entry.delete_credential() {
@@ -358,6 +400,8 @@ fn delete_secure_credential(service: Option<String>, account: String) -> Result<
 }
 
 fn main() {
+    init_tracing();
+
     tauri::Builder::default()
         .manage(RuntimeState::default())
         .invoke_handler(tauri::generate_handler![

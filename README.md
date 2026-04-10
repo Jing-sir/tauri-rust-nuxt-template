@@ -58,6 +58,13 @@
 - 前端 Runtime 统一分发 Store：`src/store/runtimeEvent.ts`
 - Desktop 凭据安全存储封装：`src/composables/useSecureCredential.ts`（Rust keyring 命令桥接）
 
+### Rust 代码规范（已落地）
+
+- **格式化**：`src-tauri/rustfmt.toml` 统一 Rust 格式约定，使用 `yarn rust:fmt` / `yarn rust:fmt:check` 执行。
+- **静态检查**：`src-tauri/Cargo.toml` 中已启用 `lints.rust + lints.clippy` 基线，重点约束 `unsafe_code`、`unused_must_use`、`redundant_clone` 等问题。
+- **结构化日志**：引入 `tracing + tracing-subscriber`，Rust runtime 从 `eprintln!` 升级为结构化日志，便于后续接入文件日志/观测平台。
+- **建议 CI 命令**：`yarn rust:fmt:check && yarn rust:clippy && yarn rust:check`
+
 ## 目录总览
 
 > 通过 `python3` 遍历生成，已忽略 `node_modules`、`.nuxt`、`.git` 等体积目录，方便在 README 中阅读。

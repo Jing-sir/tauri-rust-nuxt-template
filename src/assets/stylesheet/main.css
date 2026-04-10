@@ -1,0 +1,64 @@
+:root {
+    --app-shell-width: 1280px;
+    --app-radius: 1rem;
+    --app-gradient: linear-gradient(120deg, #10b981 0%, #0ea5e9 100%);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#app,
+#app > div,
+#__nuxt {
+    min-height: 100%;
+}
+
+html {
+    /* 禁止触摸板/移动端双指缩放，只允许横纵向滚动。
+       Ctrl/⌘ + 滚轮缩放由 App.vue 的 wheel 事件监听拦截。 */
+    touch-action: pan-x pan-y;
+}
+
+body {
+    font-family:
+        'Inter',
+        'SF Pro SC',
+        'PingFang SC',
+        'Microsoft YaHei',
+        'Segoe UI',
+        system-ui,
+        -apple-system,
+        sans-serif;
+    /* Use theme tokens so light/dark colors live in one place. */
+    background-color: var(--app-page-bg);
+    color: var(--app-page-fg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    transition:
+        background-color 0.3s ease,
+        color 0.3s ease;
+}
+
+a {
+    color: #059669;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #10b981;
+}
+
+::selection {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+:root {
+    --tv-color-platform-background: red !important;
+}

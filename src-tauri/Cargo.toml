@@ -1,0 +1,17 @@
+[package]
+name = "trading_desktop"
+version = "0.1.0"
+description = "Tauri desktop shell for nuxt trading console"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+futures-util = "0.3"
+keyring = "3.6.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+tokio = { version = "1", features = ["sync", "time"] }
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }

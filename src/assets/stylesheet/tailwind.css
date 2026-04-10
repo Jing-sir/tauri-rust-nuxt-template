@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+:root:not(.theme-dark) {
+
+    --tv-color-platform-background: var(--app-page-bg);
+    --tv-color-pane-background: var(--app-chart-bg);
+    --tv-color-pane-background-secondary: var(--app-chart-bg);
+
+    --tv-color-toolbar-button-text: #475569;
+    --tv-color-toolbar-button-text-hover: #0f172a;
+
+    --tv-color-toolbar-button-background-hover: rgba(148,163,184,.15);
+
+    --tv-color-toolbar-toggle-button-background-active: #2563eb;
+
+}
+
+/* dark theme */
+.theme-dark:root {
+
+    --tv-color-platform-background: var(--app-page-bg);
+    --tv-color-pane-background: var(--app-chart-bg);
+    --tv-color-pane-background-secondary: var(--app-chart-bg);
+
+    --tv-color-toolbar-button-text: #94a3b8;
+    --tv-color-toolbar-button-text-hover: #e2e8f0;
+
+    --tv-color-toolbar-button-background-hover: rgba(148,163,184,.15);
+
+    --tv-color-toolbar-toggle-button-background-active: #3b82f6;
+
+}

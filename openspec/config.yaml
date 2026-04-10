@@ -1,0 +1,38 @@
+schema: spec-driven
+
+context: |
+  # 项目概述
+  交易所多端项目，采用「Nuxt Web + Tauri Desktop + Rust Runtime」统一架构。
+  - Web 端：独立部署到服务器或 CDN，支持 SSR/静态输出
+  - Desktop 端：Tauri 打包分发，复用 Nuxt 前端界面
+  - Rust 端：在桌面应用中承担连接托管、安全存储、性能敏感逻辑
+
+  # 技术栈
+  Nuxt 4 + TypeScript + Pinia + Tauri 2 + Rust + WebSocket + REST
+
+  # 核心架构约束
+  1. 前端 UI 逻辑尽量复用一套代码，Web 与 Desktop 仅在基础设施层分流
+  2. Web 端可前端直连 WS；Desktop 端优先由 Rust 托管 WS 并通过事件桥接给前端
+  3. 桌面端敏感凭据不得明文落盘，必须使用系统钥匙串或等效安全存储
+  4. 打包与部署分离：Tauri 构建桌面安装包，Nuxt 构建 Web 产物
+  5. 所有交易关键动作（登录、下单、撤单、资金操作）必须可审计
+
+  # 交付与验证基线
+  - V0 先完成：行情订阅、下单/撤单、会话鉴权、断线重连、最小审计
+  - 桌面端需覆盖至少 macOS + Windows 构建链路
+  - 变更合并前需执行：lint + typecheck + 核心流程冒烟
+
+rules:
+  proposal:
+    - 必须明确区分 Web 部署与 Desktop 打包边界
+    - 必须写清楚 WS 在 Web 与 Desktop 的连接策略差异
+    - 必须标注安全边界（令牌、API Key、签名密钥、审计日志）
+    - Non-goals 必须列出 V0 不做项，避免需求漂移
+  design:
+    - 必须包含端到端数据流（行情、交易、鉴权）
+    - 必须说明失败恢复策略（重连、重放、幂等）
+    - 必须说明发布策略（Web、Desktop、自动更新）
+  tasks:
+    - 每个 task 粒度为单个子系统或单个可验证动作
+    - 每个 task 结尾必须有可执行的验证方式
+    - 最后必须包含一次端到端联调验收任务

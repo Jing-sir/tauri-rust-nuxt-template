@@ -1,0 +1,12 @@
+# Build output
+.nuxt
+.output
+dist
+
+# Dependencies
+node_modules
+
+# Lock / logs
+yarn.lock
+yarn-error.log
+

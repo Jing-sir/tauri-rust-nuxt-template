@@ -1,0 +1,23 @@
+html,
+body,
+#app {
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    /* Keep html/body background synced with color-mode tokens. */
+    background: var(--app-page-bg);
+    color: var(--app-page-fg);
+}
+
+a {
+    font-weight: 400;
+    color: inherit;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #10b981;
+}

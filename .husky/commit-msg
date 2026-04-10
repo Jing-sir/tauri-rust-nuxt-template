@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+# Git uses `core.hooksPath=.husky/_` in this repo.
+# The stub hook at `.husky/_/commit-msg` forwards execution to this file.
+#
+# Enforce Conventional Commits using the local config.
+commitlint --config commitlint.config.cjs -e "$1"
+

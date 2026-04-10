@@ -1,0 +1,19 @@
+{
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./.nuxt",
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "./.nuxt/**/*.ts",
+    "./.nuxt/**/*.d.ts",
+    "./types/**/*.d.ts",
+    "./nuxt.config.ts",
+    "./tailwind.config.ts",
+    "./src/**/*"
+  ]
+}

@@ -1,0 +1,77 @@
+/*
+  Theme Color Tokens (Light/Dark)
+
+  Goal:
+  - Centralize "black/white mode" colors (light vs dark) in one shared place.
+  - Avoid scattering hard-coded #fff/#000/rgba(255,255,255,...) across components.
+
+  Usage:
+  - Light mode uses :root values.
+  - Dark mode is activated by @nuxtjs/color-mode adding the `.dark` class on <html>.
+  - Components/CSS should prefer these variables over literal colors.
+*/
+
+:root {
+    /* Pure colors */
+    --c-white: #ffffff; /* plain white */
+    --c-black: #000000; /* plain black */
+
+    /* App surfaces and text (light) */
+    --app-page-bg: #f8fafc; /* page background */
+    --app-page-fg: #0f172a; /* main text */
+
+    /* Charts (light) */
+    --app-chart-bg: var(--c-white); /* chart widget background */
+    --app-chart-toolbar-bg: var(--app-page-bg); /* chart toolbar background */
+
+    /* Tooltip surface (light) */
+    --app-tooltip-bg: rgba(255, 255, 255, 0.96);
+    --app-tooltip-border: rgba(148, 163, 184, 0.35);
+
+    /* "Near-black" surfaces used in dark mode (also referenced as fallbacks in TS). */
+    --app-surface-950: #0f172a;
+
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --text-tertiary: #9CA3AF;
+    --text-disabled: #D1D5DB;
+
+    --text-inverse: #FFFFFF;
+    --text-brand: #3B82F6;
+
+    /* 交易所 */
+    --text-success: #16C784;
+    --text-danger: #EA3943;
+    --text-warning: #F59E0B;
+
+    --text-buy: #16C784;
+    --text-sell: #EA3943;
+}
+
+html.dark {
+    /* App surfaces and text (dark) */
+    --app-page-bg: #020617; /* page background */
+    --app-page-fg: #e2e8f0; /* main text */
+
+    /* Charts (dark) */
+    --app-chart-bg: var(--app-surface-950);
+
+    /* Tooltip surface (dark) */
+    --app-tooltip-bg: rgba(15, 23, 42, 0.92);
+    --app-tooltip-border: rgba(148, 163, 184, 0.2);
+
+    --text-primary: #F9FAFB;
+    --text-secondary: #9CA3AF;
+    --text-tertiary: #6B7280;
+    --text-disabled: #4B5563;
+
+    --text-inverse: #111827;
+    --text-brand: #60A5FA;
+
+    --text-success: #22C55E;
+    --text-danger: #F87171;
+    --text-warning: #FBBF24;
+
+    --text-buy: #22C55E;
+    --text-sell: #F87171;
+}
